@@ -1,0 +1,38 @@
+# Install:
+# pip install langchain langchain-community chromadb sentence-transformers transformers
+
+from langchain_community.document_loaders import TextLoader
+from langchain.text_splitter import CharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain.chains import RetrievalQA
+from langchain.llms import HuggingFacePipeline
+from transformers import pipeline
+
+# LLM
+pipe = pipeline("text-generation", model="google/gemma-2b-it", max_new_tokens=100)
+llm = HuggingFacePipeline(pipeline=pipe)
+
+# Load text file
+docs = TextLoader("threat.txt").load()
+
+# Split
+chunks = CharacterTextSplitter(chunk_size=200, chunk_overlap=20).split_documents(docs)
+
+# Embeddings
+emb = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
+# Vector DB
+db = Chroma.from_documents(chunks, emb, persist_directory="rag_db")
+
+# QA chain
+qa = RetrievalQA.from_chain_type(llm=llm, retriever=db.as_retriever())
+
+# Ask questions
+def ask(q):
+    print("Q:", q)
+    print("A:", qa.run(q), "\n")
+
+ask("What is CVE‑2022‑23397?")
+ask("How do I detect port scanning?")
+ask("What does powershell abuse indicate?")
