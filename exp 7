@@ -1,0 +1,56 @@
+import openai
+import ipywidgets as widgets
+from IPython.display import display, Markdown
+import re
+
+openai.api_key = "your_api_key_here"
+
+# Very simple prompt‑injection check
+def is_prompt_injection(text):
+    patterns = [
+        r"ignore previous instructions",
+        r"forget all rules",
+        r"jailbreak",
+        r"pretend you are",
+        r"act as",
+        r"system:"
+    ]
+    for p in patterns:
+        if re.search(p, text, re.IGNORECASE):
+            return True
+    return False
+
+# Super‑simple chat function
+def secure_chat(text):
+    if is_prompt_injection(text):
+        return "Blocked"
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": text}
+        ]
+    )
+    return response["choices"][0]["message"]["content"]
+
+# Widgets
+user_input = widgets.Textarea(
+    value="",
+    placeholder="Type here...",
+    description="Input:"
+)
+
+button = widgets.Button(description="Send")
+out = widgets.Output()
+
+def on_click(b):
+    with out:
+        out.clear_output()
+        result = secure_chat(user_input.value)
+        display(Markdown("### Result:\n" + result))
+        user_input.value = ""
+
+button.on_click(on_click)
+
+display(user_input, button, out)
