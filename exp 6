@@ -1,0 +1,25 @@
+import openai
+import ipywidgets as widgets
+from IPython.display import display,Markdown
+
+openai.api_key="your api key here"
+
+def review(code):
+  responses = openai.ChatCompletion.create(
+      model="gpt-3.5-turbo",
+      messages=[{"role":"user","content":f"Review this code :\n{code}"}]
+  )
+  return responses["choices"][0]["messsages"]["content"]
+
+box = widgets.Textarea(placeholder="paste code here.")
+btn = widgets.Button(description="Review")
+out = widgets.Output()
+
+def run(b):
+  with out:
+    out.clear_output()
+    result=review(box.value)
+    display(Markdown("### Result:\n"+result))
+
+btn.on_click(run)
+display(box,btn,out)
